@@ -1,0 +1,16 @@
+
+
+
+
+
+
+{% extends "base.html" %}  <!-- optional if you have a base -->
+
+{% block content %}
+  <h1>Add Visited Place</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save</button>
+  </form>
+{% endblock %}

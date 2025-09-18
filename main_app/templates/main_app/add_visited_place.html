@@ -1,0 +1,1007 @@
+{% extends "base.html" %}  <!-- optional if you have a base -->
+
+{% block content %}
+  <h1>Drive and social hub and map</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Photo / Location / Social Hub</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.10.0/dist/leaflet.css"
+        integrity="sha256-sA+e2QXG1fZ3UuOa1qPD51jKx0cXPo6wWmXwC9e+Z6w=" crossorigin=""/>
+
+  <style>
+     body {
+    background: center/cover no-repeat;
+    transition: background-image 1s ease-in-out; /* smooth fade effect */
+    
+  }
+   form, form label, form input, form select, form textarea, form th, form td {
+    color: #000;  /* Pure black */
+  }
+    :root {
+      --radius: 12px;
+      --shadow: 0 10px 30px rgba(0,0,0,0.06);
+      --bg:#f5f7fa;
+      --card:#fff;
+      --primary:#6366f1;
+      --danger:#ef4444;
+    }
+    * { box-sizing:border-box; }
+
+    h1 { font-size:1.8rem; margin-bottom:.25rem; }
+
+    /* improved navbar */
+    .tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+      background: rgba(38, 90, 202, 0.85);
+      padding: 6px;
+      border-radius: 10px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+      backdrop-filter: blur(6px);
+    }
+    .tab {
+      position: relative;
+      padding: .65rem 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      background: transparent;
+      border: none;
+      transition: all .25s ease;
+      color: #374151;
+      font-size: 0.95rem;
+    }
+    .tab:hover {
+      background: rgba(99,102,241,0.08);
+    }
+    .tab.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(99,102,241,0.4);
+    }
+
+    .panel { display:none; }
+    .panel.active { display:block; }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:16px;
+      margin-bottom:1rem;
+    }
+    .flex { display:flex; gap:1rem; flex-wrap:wrap; }
+    .btn {
+      padding:.5rem 1rem;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+    }
+    .primary { background: var(--primary); color:#fff; }
+    .muted { background:#f1f5f9; color:#374151; }
+    .danger { background: var(--danger); color:#fff; }
+    .small { font-size:.75rem; }
+    .image-grid {
+      display:grid;
+      grid-template-columns: repeat(auto-fill,minmax(170px,1fr));
+      gap:10px;
+      margin-top:8px;
+      max-height:600px;
+      overflow:auto;
+    }
+    .thumb {
+      position:relative;
+      border:1px solid #09264dff;
+      border-radius:8px;
+      overflow:hidden;
+      background:#fff;
+      display:flex;
+      flex-direction:column;
+    }
+    .thumb img {
+      width:100%;
+      aspect-ratio:4/3;
+      object-fit:cover;
+      display:block;
+      flex-shrink:0;
+    }
+    .caption {
+      padding:6px;
+      font-size:.85rem;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .caption-text {
+      outline:none;
+      min-height:1.2em;
+    }
+    .thumb-controls {
+      display:flex;
+      justify-content:space-between;
+      gap:4px;
+      margin-top:4px;
+    }
+    .map-wrapper {
+      height:340px;
+      border:1px solid #dee0e4ff;
+      border-radius:10px;
+      overflow:hidden;
+      margin-top:8px;
+    }
+    .location-box {
+      background:#eef2f7;
+      padding:10px;
+      border-radius:8px;
+      margin-bottom:8px;
+    }
+    .pin-list, .saved-list {
+      max-height:170px;
+      overflow-y:auto;
+      margin-top:6px;
+      font-size:.85rem;
+    }
+    .pin-item, .saved-item {
+      background:#f9fafb;
+      border-radius:6px;
+      padding:6px 8px;
+      margin-bottom:4px;
+      display:flex;
+      justify-content:space-between;
+      gap:6px;
+    }
+    .inline { display:inline-flex; gap:.5rem; align-items:center; }
+    .setting-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+    .badge { background:#e2e8f0; padding:4px 10px; border-radius:999px; font-size:.65rem; margin-right:4px; }
+    .socials { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+    .social-btn {
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:.5rem .8rem;
+      border-radius:8px;
+      font-weight:600;
+      border:none;
+      cursor:pointer;
+    }
+    .instagram { background: #E1306C; color:#fff; }
+    .facebook { background:#1877F2; color:#fff; }
+    .note { font-size:.7rem; color:#555; }
+    input[type=number], input[type=text] { padding:6px; border-radius:6px; border:1px solid #cbd5e1; }
+    input[readonly] { background:#f9f9fb; }
+    .overflow { overflow:auto; }
+
+    .LiquidGlass-effect {
+      position: absolute;
+      z-index: 0;
+      inset: 0;
+      backdrop-filter: blur(3px);
+      filter: url(#glass-distortion);
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .search-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+    .saved-header { display:flex; justify-content:space-between; align-items:center; }
+
+    /* location & YouTube tweaks */
+    .location-label {
+      margin-top: 6px;
+      font-size: .9rem;
+      background: #d7dde6ff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+    .youtube-search {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top:6px;
+    }
+    .youtube-search input {
+      flex:1;
+      padding:6px 10px;
+      border-radius:6px;
+      border:1px solid #cbd5e1;
+      min-width:180px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-panel="photos" role="tab" aria-selected="true">Photos</button>
+    <button class="tab" data-panel="location" role="tab">Location</button>
+    <button class="tab" data-panel="youtube" role="tab">YouTube</button>
+    <button class="tab" data-panel="social" role="tab">Social Hub</button>
+  </div>
+
+  <!-- Photos Panel -->
+  <div id="photos" class="panel active">
+    <div class="card">
+      <h2 style="margin-top:0;">Upload & Manage Photos</h2>
+      <div class="setting-row">
+        <div class="inline">
+          <label for="maxUpload">Max stored photos:</label>
+          <input type="number" id="maxUpload" min="1" max="2000" value="2000">
+        </div>
+        <div class="inline">
+          <button class="btn primary" id="clearAll">Clear All</button>
+        </div>
+      </div>
+      <div class="inline" style="gap:12px; flex-wrap:wrap;">
+        <input type="file" id="multiImage" multiple accept="image/*">
+        <div class="note">You can upload up to the configured limit. Large batches will be processed in sequence to avoid freezing. Stored in browser (IndexedDB).</div>
+      </div>
+      <div id="gallery" class="image-grid" aria-label="Uploaded images gallery"></div>
+    </div>
+  </div>
+
+  <!-- Location Panel -->
+  <div id="location" class="panel">
+    <div class="card">
+      <h2 style="margin-top:0;">Location & Pins</h2>
+      <div class="location-box">
+        <div class="search-row">
+          <div style="flex:1; min-width:180px;">
+            <input type="text" id="locationSearch" placeholder="Find location or address" style="width:100%;">
+          </div>
+          <button class="btn primary" id="searchLocationBtn">Find Location</button>
+          <button class="btn muted" id="saveLocationBtn">Save Location</button>
+        </div>
+        <div class="note">Search uses OpenStreetMap. Saved locations persist locally.</div>
+        <div class="location-label" aria-live="polite">
+          Selected: <strong><span id="displayName">–</span></strong>
+          <button class="btn small primary" id="openMapExternal" style="margin-left:10px;">Open Map</button>
+        </div>
+      </div>
+      <div class="map-wrapper" id="map" aria-label="Map showing location and pins"></div>
+
+      <div style="margin-top:8px;">
+        <div class="badge">Pins</div>
+        <div class="pin-list" id="pinsContainer"></div>
+
+        <div class="saved-header" style="margin-top:12px;">
+          <div class="badge">Saved Locations</div>
+          <button class="btn small muted" id="clearSaved">Clear All</button>
+        </div>
+        <div class="saved-list" id="savedContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- YouTube Panel -->
+  <div id="youtube" class="panel">
+    <div class="card">
+      <h2 style="margin-top:0;">YouTube Location / Query Search</h2>
+      <div class="youtube-search">
+        <div style="flex:1; min-width:180px;">
+          <input type="text" id="youtubeQuery" placeholder="Search YouTube (e.g., 'coffee shops near me')" aria-label="YouTube search input">
+        </div>
+        <button class="btn primary" id="searchYouTubeBtn">Search YouTube</button>
+        <button class="btn muted" id="openYouTubeHome">Open YouTube</button>
+      </div>
+      <div style="margin-top:10px;">
+        <div class="note">You can search any query directly. If a location is selected on the Location tab, you can include 
+          its coordinates manually or use the coordinate snippet below.</div>
+        <div style="margin-top:6px;">
+          <div>Last used coords (from Location tab): <strong><span id="ytLat">–</span>, <span id="ytLng">–</span></strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Social / Browser Panel -->
+  <div id="social" class="panel">
+    <div class="card">
+      <h2 style="margin-top:0;">Social media</h2>
+
+      <!-- Replaced Twitter/TikTok row with Instagram & Facebook rows (search like Twitter) -->
+      <div class="setting-row" style="flex-wrap:wrap; gap:12px; margin-bottom:8px;">
+        <div class="inline" style="flex:1; min-width:180px;">
+          <label for="instagramQuery" class="small" style="margin-right:6px;">Instagram:</label>
+          <input type="text" id="instagramQuery" placeholder="Search Instagram (e.g., #travel or coffee)" aria-label="Instagram search input" style="padding:6px 10px; border-radius:6px; border:1px solid #cbd5e1; min-width:150px;">
+          <button class="btn small primary" id="searchInstagramBtn" style="margin-left:4px;">Search</button>
+          <button class="btn small muted" id="openInstagramHome" style="margin-left:4px;">Instagram</button>
+        </div>
+        <div class="inline" style="flex:1; min-width:180px;">
+          <label for="facebookQuery" class="small" style="margin-right:6px;">Facebook:</label>
+          <input type="text" id="facebookQuery" placeholder="Search Facebook (e.g., Chennai food)" aria-label="Facebook search input" style="padding:6px 10px; border-radius:6px; border:1px solid #cbd5e1; min-width:150px;">
+          <button class="btn small primary" id="searchFacebookBtn" style="margin-left:4px;">Search</button>
+          <button class="btn small muted" id="openFacebookHome" style="margin-left:4px;">Facebook</button>
+        </div>
+      </div>
+
+      <!-- Quick open buttons (kept) -->
+      <div class="socials" style="margin-top:6px;">
+        <button class="social-btn instagram" id="openInstagram" aria-label="Open Instagram">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+            <path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5a4.25 4.25 0 0 0 4.25-4.25v-8.5A4.25 4.25 0 0 0 16.25 3.5h-8.5zm8.75 2.25a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5zm-4.25 1.5a5.75 5.75 0 1 1 0 11.5 5.75 5.75 0 0 1 0-11.5zm0 1.5a4.25 4.25 0 1 0 0 8.5 4.25 4.25 0 0 0 0-8.5z"/>
+          </svg>
+          Open Instagram
+        </button>
+        <button class="social-btn facebook" id="openFacebook" aria-label="Open Facebook">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+            <path d="M13.5 2H10a6 6 0 0 0-6 6v3H2v4h2v8h4v-8h3l1-4H8V8a2 2 0 0 1 2-2h3.5V2z"/>
+          </svg>
+          Open Facebook
+        </button>
+      </div>
+      <div style="margin-top:12px;">
+        <div style="margin-top:6px;">
+          <input readonly value="" id="currentPageLink" style="width:100%;" aria-label="Current page link">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template -->
+  <template id="thumbTemplate">
+    <div class="thumb">
+      <div style="position:relative;">
+        <img alt="Uploaded photo" loading="lazy">
+      </div>
+      <div class="caption">
+        <div contenteditable="false" class="caption-text" aria-label="Caption"></div>
+        <div class="thumb-controls">
+          <div>
+            <button class="small-btn muted" data-action="edit" title="Edit caption">✏️</button>
+          </div>
+          <div style="display:flex; gap:4px;">
+            <button class="small-btn muted" data-action="save" style="display:none;">Save</button>
+            <button class="small-btn muted" data-action="cancel" style="display:none;">Cancel</button>
+            <!-- NEW: Download button -->
+            <button class="small-btn muted" data-action="download" title="Download">⬇️</button>
+            <button class="small-btn danger" data-action="delete" title="Delete">🗑️</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.10.0/dist/leaflet.js"
+          integrity="sha256-dP8u3BfXbWPLfX0vFvnm9DP+Y7pXw+XnhPa+ro0N0+M=" crossorigin=""></script>
+
+  <script>
+    // ---- Tab logic ----
+    document.querySelectorAll(".tab").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.panel).classList.add("active");
+      });
+    });
+
+    // ---------- IndexedDB for photos ----------
+    let db;
+    const DB_NAME = "photo_manager_db";
+    const STORE_NAME = "images";
+
+    function openDB() {
+      return new Promise((res, rej) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = e => {
+          db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: "id" });
+          }
+        };
+        req.onsuccess = e => {
+          db = e.target.result;
+          res();
+        };
+        req.onerror = e => rej(e);
+      });
+    }
+
+    function putImage(record) {
+      return new Promise((res, rej) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        const store = tx.objectStore(STORE_NAME);
+        store.put(record);
+        tx.oncomplete = () => res();
+        tx.onerror = e => rej(e);
+      });
+    }
+
+    function getAllImages() {
+      return new Promise((res, rej) => {
+        const tx = db.transaction(STORE_NAME, "readonly");
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => res(req.result);
+        req.onerror = e => rej(e);
+      });
+    }
+
+    function deleteImage(id) {
+      return new Promise((res, rej) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        const store = tx.objectStore(STORE_NAME);
+        store.delete(id);
+        tx.oncomplete = () => res();
+        tx.onerror = e => rej(e);
+      });
+    }
+
+    function clearAllImages() {
+      return new Promise((res, rej) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        const store = tx.objectStore(STORE_NAME);
+        store.clear();
+        tx.oncomplete = () => res();
+        tx.onerror = e => rej(e);
+      });
+    }
+
+    // Photo UI
+    const fileInput = document.getElementById("multiImage");
+    const gallery = document.getElementById("gallery");
+    const thumbTemplate = document.getElementById("thumbTemplate");
+    const clearAllBtn = document.getElementById("clearAll");
+    const maxUploadInput = document.getElementById("maxUpload");
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function mimeToExt(m) {
+      if (!m) return 'png';
+      if (m.includes('jpeg') || m.includes('jpg')) return 'jpg';
+      if (m.includes('png')) return 'png';
+      if (m.includes('webp')) return 'webp';
+      return 'png';
+    }
+
+    async function refreshGallery() {
+      gallery.innerHTML = "";
+      const items = await getAllImages();
+      items.sort((a,b)=>b.added - a.added);
+      const limit = parseInt(maxUploadInput.value,10) || 1000;
+      if (items.length > limit) {
+        const toRemove = items.slice(limit);
+        for (const item of toRemove) {
+          await deleteImage(item.id);
+        }
+      }
+      const updated = await getAllImages();
+      updated.sort((a,b)=>b.added - a.added);
+      for (const item of updated) {
+        const node = thumbTemplate.content.cloneNode(true);
+        const imgEl = node.querySelector("img");
+        const captionDiv = node.querySelector(".caption-text");
+        const editBtn = node.querySelector('[data-action="edit"]');
+        const deleteBtn = node.querySelector('[data-action="delete"]');
+        const saveBtn = node.querySelector('[data-action="save"]');
+        const cancelBtn = node.querySelector('[data-action="cancel"]');
+        const downloadBtn = node.querySelector('[data-action="download"]');
+
+        imgEl.src = item.data;
+        captionDiv.textContent = item.caption || "";
+        captionDiv.setAttribute("data-id", item.id);
+
+        let originalText = captionDiv.textContent;
+
+        editBtn.addEventListener("click", () => {
+          captionDiv.contentEditable = "true";
+          captionDiv.focus();
+          saveBtn.style.display = "inline-block";
+          cancelBtn.style.display = "inline-block";
+        });
+
+        saveBtn.addEventListener("click", async () => {
+          captionDiv.contentEditable = "false";
+          saveBtn.style.display = "none";
+          cancelBtn.style.display = "none";
+          const newCaption = captionDiv.textContent.trim();
+          if (newCaption !== originalText) {
+            originalText = newCaption;
+            await putImage({ id: item.id, data: item.data, caption: newCaption, added: item.added });
+          }
+        });
+
+        cancelBtn.addEventListener("click", () => {
+          captionDiv.textContent = originalText;
+          captionDiv.contentEditable = "false";
+          saveBtn.style.display = "none";
+          cancelBtn.style.display = "none";
+        });
+
+        // NEW: Download handler
+        downloadBtn.addEventListener('click', () => {
+          try {
+            const mime = item.data.slice(5, item.data.indexOf(';')); // e.g., image/png
+            const ext = mimeToExt(mime);
+            const baseName = (captionDiv.textContent || 'photo-' + item.id.slice(0,8))
+                              .toLowerCase()
+                              .replace(/[^a-z0-9-_]+/g, '-')
+                              .replace(/^-+|-+$/g, '') || 'photo';
+            const a = document.createElement('a');
+            a.href = item.data;
+            a.download = baseName + '.' + ext;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          } catch(err) {
+            console.error(err);
+            alert('Download failed.');
+          }
+        });
+
+        deleteBtn.addEventListener("click", async () => {
+          if (confirm("Delete this image?")) {
+            await deleteImage(item.id);
+            refreshGallery();
+          }
+        });
+
+        gallery.appendChild(node);
+      }
+    }
+
+    fileInput.addEventListener("change", async e => {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+      const limit = parseInt(maxUploadInput.value,10) || 1000;
+      const existing = await getAllImages();
+      const remainingSlots = Math.max(0, limit - existing.length);
+      if (files.length > remainingSlots) {
+        alert(`Can only add ${remainingSlots} more image(s) to respect the limit of ${limit}.`);
+      }
+      const toProcess = files.slice(0, remainingSlots);
+      for (const f of toProcess) {
+        if (!f.type.startsWith("image/")) continue;
+        const reader = new FileReader();
+        await new Promise(resolve => {
+          reader.onload = async () => {
+            const base64 = reader.result;
+            await putImage({
+              id: uuidv4(),
+              data: base64,
+              caption: "",
+              added: Date.now()
+            });
+            resolve();
+          };
+          reader.readAsDataURL(f);
+        });
+      }
+      fileInput.value = "";
+      refreshGallery();
+    });
+
+    clearAllBtn.addEventListener("click", async () => {
+      if (confirm("Remove all stored images?")) {
+        await clearAllImages();
+        refreshGallery();
+      }
+    });
+
+    maxUploadInput.addEventListener("change", () => {
+      if (parseInt(maxUploadInput.value,10) < 1) maxUploadInput.value = "1";
+      refreshGallery();
+    });
+
+    // ---------- Map & Location ----------
+    let map, userMarker;
+    let pins = [];
+    const pinsContainer = document.getElementById("pinsContainer");
+    const ytLat = document.getElementById("ytLat");
+    const ytLng = document.getElementById("ytLng");
+    const searchLocationBtn = document.getElementById("searchLocationBtn");
+    const locationSearchInput = document.getElementById("locationSearch");
+    const saveLocationBtn = document.getElementById("saveLocationBtn");
+    const savedContainer = document.getElementById("savedContainer");
+    const clearSavedBtn = document.getElementById("clearSaved");
+    const displayNameEl = document.getElementById("displayName");
+
+    function initMap() {
+      map = L.map("map", { zoomControl: true }).setView([20,0], 2);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "© OpenStreetMap"
+      }).addTo(map);
+      attachMapClick();
+    }
+
+    function updateLocationDisplay(lat, lng, acc, display_name) {
+      // update YouTube coordinates and display name label
+      ytLat.textContent = lat.toFixed(6);
+      ytLng.textContent = lng.toFixed(6);
+      displayNameEl.textContent = display_name || "(unnamed)";
+    }
+
+    function addOrUpdateUserMarker(lat, lng, label) {
+      if (userMarker) {
+        userMarker.setLatLng([lat, lng]);
+        if (label) userMarker.bindPopup(label);
+      } else {
+        userMarker = L.marker([lat, lng], { title: "Selected location", draggable: true }).addTo(map);
+        if (label) userMarker.bindPopup(label);
+        userMarker.on("dragend", () => {
+          const pos = userMarker.getLatLng();
+          updateLocationDisplay(pos.lat, pos.lng, 0, label || "");
+          renderSavedAndPins();
+        });
+      }
+      if (label) userMarker.bindPopup(label);
+      map.setView([lat, lng], 14, { animate: true });
+    }
+
+    function renderPins() {
+      pinsContainer.innerHTML = "";
+      pins.forEach((p, idx) => {
+        const div = document.createElement("div");
+        div.className = "pin-item";
+        const left = document.createElement("div");
+        left.innerHTML = `<div class="small"><strong>${p.label || "(no label)"}</strong></div>
+                          <div>Lat: ${p.lat.toFixed(5)}, Lng: ${p.lng.toFixed(5)}</div>`;
+        const right = document.createElement("div");
+        right.style.display = "flex";
+        right.style.gap = "4px";
+        const goBtn = document.createElement("button");
+        goBtn.textContent = "Go";
+        goBtn.className = "small-btn primary";
+        goBtn.addEventListener("click", () => {
+          map.setView([p.lat, p.lng], 14);
+        });
+        const del = document.createElement("button");
+        del.textContent = "✕";
+        del.className = "small-btn danger";
+        del.title = "Remove pin";
+        del.addEventListener("click", () => {
+          if (confirm("Remove this pin?")) {
+            if (p.leaflet) map.removeLayer(p.leaflet);
+            pins.splice(idx,1);
+            renderPins();
+          }
+        });
+        right.appendChild(goBtn);
+        right.appendChild(del);
+        div.appendChild(left);
+        div.appendChild(right);
+        pinsContainer.appendChild(div);
+      });
+    }
+
+    function getSavedLocations() {
+      try {
+        return JSON.parse(localStorage.getItem("savedLocations") || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function setSavedLocations(arr) {
+      localStorage.setItem("savedLocations", JSON.stringify(arr));
+    }
+
+    function renderSavedAndPins() {
+      // saved
+      const saved = getSavedLocations();
+      savedContainer.innerHTML = "";
+      saved.forEach((s, i) => {
+        const div = document.createElement("div");
+        div.className = "saved-item";
+        const left = document.createElement("div");
+        left.innerHTML = `<div class="small"><strong>${s.name || "(no name)"}</strong></div>
+                          <div>Lat: ${s.lat.toFixed(5)}, Lng: ${s.lng.toFixed(5)}</div>`;
+        const right = document.createElement("div");
+        right.style.display = "flex";
+        right.style.gap = "4px";
+        const goBtn = document.createElement("button");
+        goBtn.textContent = "Go";
+        goBtn.className = "small-btn primary";
+        goBtn.addEventListener("click", () => {
+          addOrUpdateUserMarker(s.lat, s.lng, s.name);
+          updateLocationDisplay(s.lat, s.lng, 0, s.name);
+        });
+        const del = document.createElement("button");
+        del.textContent = "✕";
+        del.className = "small-btn danger";
+        del.title = "Delete saved";
+        del.addEventListener("click", () => {
+          if (confirm("Remove saved location?")) {
+            saved.splice(i,1);
+            setSavedLocations(saved);
+            renderSavedAndPins();
+          }
+        });
+        right.appendChild(goBtn);
+        right.appendChild(del);
+        div.appendChild(left);
+        div.appendChild(right);
+        savedContainer.appendChild(div);
+      });
+    }
+
+    // click on map to add pin
+    function attachMapClick() {
+      map.on("click", e => {
+        const label = prompt("Label for this pin (optional):", "");
+        const marker = L.marker([e.latlng.lat, e.latlng.lng], { draggable: true }).addTo(map);
+        marker.bindPopup(label || "No description").openPopup();
+        const pin = {
+          lat: e.latlng.lat,
+          lng: e.latlng.lng,
+          label: label,
+          leaflet: marker
+        };
+        pins.push(pin);
+        renderPins();
+        marker.on("dragend", () => {
+          const newPos = marker.getLatLng();
+          pin.lat = newPos.lat;
+          pin.lng = newPos.lng;
+          renderPins();
+        });
+      });
+    }
+
+    // Search location via OSM Nominatim (modified to supply display name)
+    async function searchLocation(query) {
+      if (!query) return;
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`;
+        const resp = await fetch(url, {
+          headers: {
+            "Accept": "application/json",
+            "User-Agent": "LocationSearchDemo/1.0"
+          }
+        });
+        const data = await resp.json();
+        if (data && data.length > 0) {
+          const first = data[0];
+          const lat = parseFloat(first.lat);
+          const lon = parseFloat(first.lon);
+          updateLocationDisplay(lat, lon, 0, first.display_name);
+          addOrUpdateUserMarker(lat, lon, first.display_name);
+        } else {
+          alert("No results found.");
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Search failed.");
+      }
+    }
+
+    searchLocationBtn.addEventListener("click", () => {
+      const q = locationSearchInput.value.trim();
+      if (!q) return;
+      searchLocation(q);
+    });
+
+    saveLocationBtn.addEventListener("click", () => {
+      if (!userMarker) {
+        alert("No location to save. Search first.");
+        return;
+      }
+      const pos = userMarker.getLatLng();
+      const name = prompt("Name for saved location:", "");
+      const saved = getSavedLocations();
+      saved.push({
+        lat: pos.lat,
+        lng: pos.lng,
+        name: name || `Location ${saved.length + 1}`
+      });
+      setSavedLocations(saved);
+      renderSavedAndPins();
+    });
+
+    clearSavedBtn.addEventListener("click", () => {
+      if (confirm("Clear all saved locations?")) {
+        localStorage.removeItem("savedLocations");
+        renderSavedAndPins();
+      }
+    });
+
+    // Open external full map at current selected location
+    const openMapExternalBtn = document.getElementById("openMapExternal");
+    openMapExternalBtn.addEventListener("click", () => {
+      let lat, lng;
+      if (userMarker) {
+        const pos = userMarker.getLatLng();
+        lat = pos.lat;
+        lng = pos.lng;
+      } else if (ytLat.textContent !== "–" && ytLng.textContent !== "–") {
+        lat = parseFloat(ytLat.textContent);
+        lng = parseFloat(ytLng.textContent);
+      }
+      if (typeof lat === "undefined" || typeof lng === "undefined") {
+        alert("No location selected to open."); 
+        return;
+      }
+      // Open OpenStreetMap centered at the coordinates, zoom 14
+      const url = `https://www.openstreetmap.org/?mlat=${lat.toFixed(6)}&mlon=${lng.toFixed(6)}#map=14/${lat.toFixed(6)}/${lng.toFixed(6)}`;
+      window.open(url, "_blank");
+    });
+
+    // YouTube search logic
+    const searchYouTubeBtn = document.getElementById("searchYouTubeBtn");
+    const openYouTubeHome = document.getElementById("openYouTubeHome");
+    const youtubeQueryInput = document.getElementById("youtubeQuery");
+
+    searchYouTubeBtn.addEventListener("click", () => {
+      const q = youtubeQueryInput.value.trim();
+      if (!q) {
+        alert("Enter a search term for YouTube.");
+        return;
+      }
+      const query = encodeURIComponent(q);
+      const url = `https://www.youtube.com/results?search_query=${query}`;
+      window.open(url, "_blank");
+    });
+
+    openYouTubeHome.addEventListener("click", () => {
+      window.open("https://www.youtube.com", "_blank");
+    });
+
+    // Social / browser helpers
+    const openInstagramBtn = document.getElementById("openInstagram");
+    const openFacebookBtn = document.getElementById("openFacebook");
+    const currentPageLink = document.getElementById("currentPageLink");
+
+    openInstagramBtn.addEventListener("click", () => {
+      window.open("https://www.instagram.com", "_blank");
+    });
+
+    openFacebookBtn.addEventListener("click", () => {
+      window.open("https://www.facebook.com", "_blank");
+    });
+
+    // Instagram & Facebook search (Twitter-like UI)
+    const searchInstagramBtn = document.getElementById('searchInstagramBtn');
+    const openInstagramHome = document.getElementById('openInstagramHome');
+    const instagramQueryInput = document.getElementById('instagramQuery');
+
+    searchInstagramBtn.addEventListener('click', () => {
+      const q = instagramQueryInput.value.trim();
+      if (!q) { alert('Enter a search term for Instagram.'); return; }
+      const isHashtag = q.startsWith('#');
+      if (isHashtag) {
+        const tag = q.replace(/^#+/, '').replace(/\s+/g,'');
+        window.open(`https://www.instagram.com/explore/tags/${encodeURIComponent(tag)}/`, '_blank');
+      } else {
+        // Fallback to Google site search (works without login)
+        window.open(`https://www.google.com/search?q=${encodeURIComponent('site:instagram.com ' + q)}`, '_blank');
+      }
+    });
+    openInstagramHome.addEventListener('click', () => window.open('https://www.instagram.com', '_blank'));
+
+    const searchFacebookBtn = document.getElementById('searchFacebookBtn');
+    const openFacebookHome = document.getElementById('openFacebookHome');
+    const facebookQueryInput = document.getElementById('facebookQuery');
+
+    searchFacebookBtn.addEventListener('click', () => {
+      const q = facebookQueryInput.value.trim();
+      if (!q) { alert('Enter a search term for Facebook.'); return; }
+      window.open(`https://www.facebook.com/search/top?q=${encodeURIComponent(q)}`,'_blank');
+    });
+    openFacebookHome.addEventListener('click', () => window.open('https://www.facebook.com', '_blank'));
+
+    // bootstrap
+    (async function() {
+      await openDB();
+      refreshGallery();
+      initMap();
+      renderSavedAndPins();
+      // populate current page link
+      currentPageLink.value = window.location.href;
+    })();
+
+
+  const backgrounds = [
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
+"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
+"https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?auto=format&fit=crop&w=1920&q=80",
+"https://images.unsplash.com/photo-1493558103817-58b2924bce98?auto=format&fit=crop&w=1920&q=80",
+
+"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
+"https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1920&q=80",
+"https://images.unsplash.com/photo-1441829266145-6d4bfbd38eb4?auto=format&fit=crop&w=1920&q=80",
+
+"https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?auto=format&fit=crop&w=1920&q=80",
+"https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1920&q=80",
+"https://images.unsplash.com/photo-1483683804023-6ccdb62f86ef?auto=format&fit=crop&w=1920&q=80",
+"https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=1920&q=80",
+"https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=1920&q=80",
+"https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1920&q=80",
+"https://images.unsplash.com/photo-1493558103817-58b2924bce98?auto=format&fit=crop&w=1920&q=80",
+"https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1920&q=80",
+"https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1920&q=80",
+"https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1920&q=80",
+"https://images.unsplash.com/photo-1482192596544-9eb780fc7f66?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1482192596544-9eb780fc7f66?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1920&q=80",
+
+    
+    "https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=1920&q=80",
+
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1482192596544-9eb780fc7f66?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1920&q=80",
+
+    "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1482192596544-9eb780fc7f66?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1920&q=80",
+   ,
+    "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=1920&q=80",
+
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1920&q=80",
+   
+    "https://images.unsplash.com/photo-1482192596544-9eb780fc7f66?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1920&q=80",
+    
+    "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=1920&q=80",
+    "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=1920&q=80",
+  ];
+
+  let index = 0;
+
+  function changeBackground() {
+    document.body.style.backgroundImage = `url('${backgrounds[index]}')`;
+    index = (index + 1) % backgrounds.length;
+  }
+
+  // Initial background
+  changeBackground();
+
+  // Change every 3 seconds
+  setInterval(changeBackground, 800);
+  </script>
+</body>
+</html>
+
+
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    
+  </form>
+{% endblock %}

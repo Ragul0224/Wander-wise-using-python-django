@@ -1,7 +1,7 @@
 ![The Travel Collector](/main_app/static/images/TravelCollector.png)
 ***
 
-## README By: Yamily Benigni - [Linkedin](https://www.linkedin.com/in/yamilybenigni/) | [Portfolio](https://yamilycodes.com)
+
 
 
 ***
